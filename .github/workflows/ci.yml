@@ -25,7 +25,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ lower(github.repository) }}
+  IMAGE_NAME: ${{ github.repository }}
   BOOST_VERSION: 1.92.0_b1
 
 jobs:
@@ -63,6 +63,7 @@ jobs:
       - name: Build and push
         run: |
           IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
           BUILD_ARGS="--build-arg BUILD_VARIANT=${{ steps.args.outputs.build_variant }} --build-arg LINK_TYPE=${{ steps.args.outputs.link_type }}"
 
           TAGS=""
