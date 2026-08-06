@@ -33,7 +33,7 @@ RUN BOOST_VERSION=$BOOST_VERSION \
     BUILD_VARIANT=$BUILD_VARIANT \
     LINK_TYPE=$LINK_TYPE \
     BOOST_LIBS=$BOOST_LIBS \
-    /tmp/build-boost.sh
+    sh /tmp/build-boost.sh
 
 COPY LICENSE /usr/share/licenses/boost-license/LICENSE
 
