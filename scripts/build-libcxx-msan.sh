@@ -51,7 +51,7 @@ cd llvm-project
 # sanitizer flags to the runtime build AND keeps -nostdinc++ so libc++'s own
 # headers are used instead of GCC's libstdc++ ones.
 cmake -S runtimes -B build -G Ninja \
-    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
+    -DLLVM_ENABLE_RUNTIMES="libunwind;libcxx;libcxxabi" \
     -DCMAKE_C_COMPILER=clang \
     -DCMAKE_CXX_COMPILER=clang++ \
     -DCMAKE_BUILD_TYPE=Release \
