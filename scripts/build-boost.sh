@@ -22,6 +22,7 @@ BOOST_VERSION="${BOOST_VERSION:-1.92.0_b1}"
 BUILD_VARIANT="${BUILD_VARIANT:-Release}"
 LINK_TYPE="${LINK_TYPE:-static}"
 SANITIZER="${SANITIZER:-off}"
+COMPILER="${COMPILER:-}"
 BOOST_LIBS="${BOOST_LIBS:---with-json --with-program_options --with-charconv}"
 
 BOOST_VERSION_DASH="${BOOST_VERSION//./_}"
@@ -46,9 +47,10 @@ if [ "$SANITIZER" != "off" ]; then
         msan)  SANITIZER_FLAGS="-fsanitize=memory -fsanitize-memory-track-origins" ;;
         *)     echo "Unknown sanitizer: $SANITIZER"; exit 1 ;;
     esac
-    TOOLSET=""
-    if [ "$SANITIZER" = "msan" ]; then
+    if [ "$COMPILER" = "clang" ] || [ "$SANITIZER" = "msan" ]; then
         TOOLSET="toolset=clang"
+    else
+        TOOLSET=""
     fi
     # shellcheck disable=SC2086
     ./b2 install \

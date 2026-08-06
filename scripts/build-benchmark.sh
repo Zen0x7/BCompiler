@@ -22,6 +22,7 @@ BENCHMARK_VERSION="${BENCHMARK_VERSION:-v1.9.1}"
 BUILD_VARIANT="${BUILD_VARIANT:-Release}"
 LINK_TYPE="${LINK_TYPE:-static}"
 SANITIZER="${SANITIZER:-off}"
+COMPILER="${COMPILER:-}"
 
 SHARED=OFF
 if [ "$LINK_TYPE" = "shared" ] || [ "$SANITIZER" != "off" ]; then
@@ -49,7 +50,7 @@ if [ "$SANITIZER" != "off" ]; then
         msan)  SANITIZER_FLAGS="-fsanitize=memory -fsanitize-memory-track-origins" ;;
         *)     echo "Unknown sanitizer: $SANITIZER"; exit 1 ;;
     esac
-    if [ "$SANITIZER" = "msan" ]; then
+    if [ "$COMPILER" = "clang" ] || [ "$SANITIZER" = "msan" ]; then
         CMAKE_ARGS+=(
             -DCMAKE_C_COMPILER=clang
             -DCMAKE_CXX_COMPILER=clang++
@@ -60,6 +61,13 @@ if [ "$SANITIZER" != "off" ]; then
         -DCMAKE_EXE_LINKER_FLAGS="$SANITIZER_FLAGS"
         -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZER_FLAGS"
     )
+    # TSAN/MSAN binaries cannot run during configure (regex backend probe),
+    # so pin the backend to std::regex to avoid the "failed to run" fatal.
+    if [ "$SANITIZER" = "tsan" ] || [ "$SANITIZER" = "msan" ]; then
+        CMAKE_ARGS+=(
+            -DHAVE_STD_REGEX=1
+        )
+    fi
 fi
 
 cmake -S . -B build "${CMAKE_ARGS[@]}"

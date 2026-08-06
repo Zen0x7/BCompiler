@@ -25,6 +25,9 @@ ARG SANITIZER=off
 
 RUN apk update && apk add --no-cache \
     alpine-sdk \
+    clang \
+    compiler-rt \
+    lld \
     cmake \
     git \
     wget \
@@ -33,23 +36,29 @@ RUN apk update && apk add --no-cache \
     ca-certificates
 
 COPY scripts/build-boost.sh /tmp/build-boost.sh
-RUN BOOST_VERSION=$BOOST_VERSION \
+RUN if [ "$SANITIZER" != "off" ]; then C=clang; else C=gcc; fi; \
+    BOOST_VERSION=$BOOST_VERSION \
     BUILD_VARIANT=$BUILD_VARIANT \
     LINK_TYPE=$LINK_TYPE \
     BOOST_LIBS=$BOOST_LIBS \
     SANITIZER=$SANITIZER \
+    COMPILER=$C \
     bash /tmp/build-boost.sh
 
 COPY scripts/build-gtest.sh /tmp/build-gtest.sh
-RUN BUILD_VARIANT=$BUILD_VARIANT \
+RUN if [ "$SANITIZER" != "off" ]; then C=clang; else C=gcc; fi; \
+    BUILD_VARIANT=$BUILD_VARIANT \
     LINK_TYPE=$LINK_TYPE \
     SANITIZER=$SANITIZER \
+    COMPILER=$C \
     bash /tmp/build-gtest.sh
 
 COPY scripts/build-benchmark.sh /tmp/build-benchmark.sh
-RUN BUILD_VARIANT=$BUILD_VARIANT \
+RUN if [ "$SANITIZER" != "off" ]; then C=clang; else C=gcc; fi; \
+    BUILD_VARIANT=$BUILD_VARIANT \
     LINK_TYPE=$LINK_TYPE \
     SANITIZER=$SANITIZER \
+    COMPILER=$C \
     bash /tmp/build-benchmark.sh
 
 COPY LICENSE /usr/share/licenses/boost-license/LICENSE

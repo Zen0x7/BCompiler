@@ -28,6 +28,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     g++ \
     gcc \
     clang \
+    libclang-rt-14-dev \
     cmake \
     git \
     wget \

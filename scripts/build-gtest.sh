@@ -22,6 +22,7 @@ GTEST_VERSION="${GTEST_VERSION:-v1.16.0}"
 BUILD_VARIANT="${BUILD_VARIANT:-Release}"
 LINK_TYPE="${LINK_TYPE:-static}"
 SANITIZER="${SANITIZER:-off}"
+COMPILER="${COMPILER:-}"
 
 SHARED=OFF
 if [ "$LINK_TYPE" = "shared" ] || [ "$SANITIZER" != "off" ]; then
@@ -49,7 +50,7 @@ if [ "$SANITIZER" != "off" ]; then
         msan)  SANITIZER_FLAGS="-fsanitize=memory -fsanitize-memory-track-origins" ;;
         *)     echo "Unknown sanitizer: $SANITIZER"; exit 1 ;;
     esac
-    if [ "$SANITIZER" = "msan" ]; then
+    if [ "$COMPILER" = "clang" ] || [ "$SANITIZER" = "msan" ]; then
         CMAKE_ARGS+=(
             -DCMAKE_C_COMPILER=clang
             -DCMAKE_CXX_COMPILER=clang++
