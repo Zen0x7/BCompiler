@@ -39,19 +39,19 @@ RUN BOOST_VERSION=$BOOST_VERSION \
     LINK_TYPE=$LINK_TYPE \
     BOOST_LIBS=$BOOST_LIBS \
     SANITIZER=$SANITIZER \
-    sh /tmp/build-boost.sh
+    bash /tmp/build-boost.sh
 
 COPY scripts/build-gtest.sh /tmp/build-gtest.sh
 RUN BUILD_VARIANT=$BUILD_VARIANT \
     LINK_TYPE=$LINK_TYPE \
     SANITIZER=$SANITIZER \
-    sh /tmp/build-gtest.sh
+    bash /tmp/build-gtest.sh
 
 COPY scripts/build-benchmark.sh /tmp/build-benchmark.sh
 RUN BUILD_VARIANT=$BUILD_VARIANT \
     LINK_TYPE=$LINK_TYPE \
     SANITIZER=$SANITIZER \
-    sh /tmp/build-benchmark.sh
+    bash /tmp/build-benchmark.sh
 
 COPY LICENSE /usr/share/licenses/boost-license/LICENSE
 
