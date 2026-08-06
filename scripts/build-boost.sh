@@ -49,8 +49,12 @@ if [ "$SANITIZER" != "off" ]; then
     esac
     if [ "$COMPILER" = "clang" ] || [ "$SANITIZER" = "msan" ]; then
         TOOLSET="toolset=clang"
+        # b2 with toolset=clang forces --target=x86_64-pc-linux, which breaks
+        # the libstdc++ header lookup on musl. Pin the native target instead.
+        CLANG_TARGET="-target $(clang -dumpmachine)"
     else
         TOOLSET=""
+        CLANG_TARGET=""
     fi
     # shellcheck disable=SC2086
     ./b2 install \
@@ -59,8 +63,8 @@ if [ "$SANITIZER" != "off" ]; then
         debug-symbols=on \
         link=shared runtime-link=shared \
         $TOOLSET \
-        cxxflags="$SANITIZER_FLAGS -g -O1" \
-        linkflags="$SANITIZER_FLAGS" \
+        cxxflags="$CLANG_TARGET $SANITIZER_FLAGS -g -O1" \
+        linkflags="$CLANG_TARGET $SANITIZER_FLAGS" \
         -j2
 elif [ "$BUILD_VARIANT" = "Debug" ]; then
     ./b2 install \
