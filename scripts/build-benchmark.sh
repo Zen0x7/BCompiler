@@ -57,8 +57,14 @@ if [ "$SANITIZER" != "off" ]; then
             -DCMAKE_CXX_COMPILER=clang++
         )
     fi
+    # clang 22 warns on __COUNTER__ as C2y extension (benchmark.h). Keep it
+    # as a warning regardless of -Werror.
+    EXTRA_CXX_FLAGS=""
+    if [ "$COMPILER" = "clang" ] || [ "$SANITIZER" = "msan" ]; then
+        EXTRA_CXX_FLAGS="-Wno-c2y-extensions"
+    fi
     CMAKE_ARGS+=(
-        -DCMAKE_CXX_FLAGS="$SANITIZER_FLAGS -g -O1"
+        -DCMAKE_CXX_FLAGS="$SANITIZER_FLAGS -g -O1 $EXTRA_CXX_FLAGS"
         -DCMAKE_EXE_LINKER_FLAGS="$SANITIZER_FLAGS"
         -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZER_FLAGS"
     )
