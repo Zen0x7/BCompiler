@@ -65,5 +65,5 @@ cmake -S runtimes -B build -G Ninja \
     -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=OFF \
     -DLIBCXXABI_ENABLE_EXCEPTIONS=ON
 
-cmake --build build --target install-cxx install-cxxabi --parallel 2
+cmake --build build --target install-cxx install-cxxabi install-unwind --parallel 2
 rm -rf /tmp/llvm-project /tmp/llvm-project.tar.gz
