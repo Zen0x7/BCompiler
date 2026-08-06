@@ -34,8 +34,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [debug, release, static, shared]
+        distro: [alpine, ubuntu, debian]
+        variant: [debug, release, static, shared, asan, tsan, ubsan, msan]
         runner: [ubuntu-latest, ubuntu-24.04-arm]
+        exclude:
+          - distro: alpine
+            variant: tsan
+          - distro: alpine
+            variant: msan
     permissions:
       contents: read
       packages: write
@@ -54,10 +60,14 @@ jobs:
         id: args
         run: |
           case ${{ matrix.variant }} in
-            debug)   echo "build_variant=Debug"   >> "$GITHUB_OUTPUT"; echo "link_type=static"   >> "$GITHUB_OUTPUT" ;;
-            release) echo "build_variant=Release" >> "$GITHUB_OUTPUT"; echo "link_type=shared"   >> "$GITHUB_OUTPUT" ;;
-            static)  echo "build_variant=Release" >> "$GITHUB_OUTPUT"; echo "link_type=static"   >> "$GITHUB_OUTPUT" ;;
-            shared)  echo "build_variant=Debug"   >> "$GITHUB_OUTPUT"; echo "link_type=shared"   >> "$GITHUB_OUTPUT" ;;
+            debug)  echo "build_variant=Debug"   >> "$GITHUB_OUTPUT"; echo "link_type=static"   >> "$GITHUB_OUTPUT"; echo "sanitizer=off"   >> "$GITHUB_OUTPUT" ;;
+            release) echo "build_variant=Release" >> "$GITHUB_OUTPUT"; echo "link_type=shared"   >> "$GITHUB_OUTPUT"; echo "sanitizer=off"   >> "$GITHUB_OUTPUT" ;;
+            static) echo "build_variant=Release" >> "$GITHUB_OUTPUT"; echo "link_type=static"   >> "$GITHUB_OUTPUT"; echo "sanitizer=off"   >> "$GITHUB_OUTPUT" ;;
+            shared) echo "build_variant=Debug"   >> "$GITHUB_OUTPUT"; echo "link_type=shared"   >> "$GITHUB_OUTPUT"; echo "sanitizer=off"   >> "$GITHUB_OUTPUT" ;;
+            asan)   echo "build_variant=Release" >> "$GITHUB_OUTPUT"; echo "link_type=shared"   >> "$GITHUB_OUTPUT"; echo "sanitizer=asan"   >> "$GITHUB_OUTPUT" ;;
+            tsan)   echo "build_variant=Release" >> "$GITHUB_OUTPUT"; echo "link_type=shared"   >> "$GITHUB_OUTPUT"; echo "sanitizer=tsan"   >> "$GITHUB_OUTPUT" ;;
+            ubsan)  echo "build_variant=Release" >> "$GITHUB_OUTPUT"; echo "link_type=shared"   >> "$GITHUB_OUTPUT"; echo "sanitizer=ubsan"  >> "$GITHUB_OUTPUT" ;;
+            msan)   echo "build_variant=Release" >> "$GITHUB_OUTPUT"; echo "link_type=shared"   >> "$GITHUB_OUTPUT"; echo "sanitizer=msan"   >> "$GITHUB_OUTPUT" ;;
           esac
 
       - name: Build and push
@@ -65,17 +75,21 @@ jobs:
           IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
           BUILD_ARGS="--build-arg BUILD_VARIANT=${{ steps.args.outputs.build_variant }} --build-arg LINK_TYPE=${{ steps.args.outputs.link_type }}"
+          if [ "${{ steps.args.outputs.sanitizer }}" != "off" ]; then
+            BUILD_ARGS="$BUILD_ARGS --build-arg SANITIZER=${{ steps.args.outputs.sanitizer }}"
+          fi
 
           TAGS=""
           if [ "${{ github.ref }}" = "refs/heads/master" ]; then
-            TAGS="$TAGS --tag ${IMAGE}:latest-${{ matrix.variant }}-${ARCH}"
+            TAGS="$TAGS --tag ${IMAGE}:latest-${{ matrix.variant }}-${{ matrix.distro }}-${ARCH}"
           fi
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
-            TAGS="$TAGS --tag ${IMAGE}:v${VERSION}-${{ matrix.variant }}-${ARCH}"
+            TAGS="$TAGS --tag ${IMAGE}:v${VERSION}-${{ matrix.variant }}-${{ matrix.distro }}-${ARCH}"
           fi
 
           docker buildx build \
+            -f ${{ matrix.distro }}/Dockerfile \
             $BUILD_ARGS \
             $TAGS \
             --push \

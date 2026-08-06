@@ -18,26 +18,29 @@
 # a source language processor.
 set -euo pipefail
 
-BOOST_VERSION="${BOOST_VERSION:-1.92.0_b1}"
+BENCHMARK_VERSION="${BENCHMARK_VERSION:-v1.9.1}"
 BUILD_VARIANT="${BUILD_VARIANT:-Release}"
 LINK_TYPE="${LINK_TYPE:-static}"
 SANITIZER="${SANITIZER:-off}"
-BOOST_LIBS="${BOOST_LIBS:---with-json --with-program_options --with-charconv}"
 
-BOOST_VERSION_DASH="${BOOST_VERSION//./_}"
-BOOST_URL="${BOOST_URL:-https://archives.boost.io/beta/1.92.0.beta1/source/boost_$BOOST_VERSION_DASH.tar.gz}"
-
-wget -q "$BOOST_URL"
-tar -xf "boost_$BOOST_VERSION_DASH.tar.gz"
-if [ -d "boost_$BOOST_VERSION_DASH" ]; then
-    BOOST_DIR="boost_$BOOST_VERSION_DASH"
-else
-    BOOST_DIR=$(ls -d boost_*/)
+SHARED=OFF
+if [ "$LINK_TYPE" = "shared" ] || [ "$SANITIZER" != "off" ]; then
+    SHARED=ON
 fi
-cd "$BOOST_DIR"
-sh bootstrap.sh
 
-# shellcheck disable=SC2086
+wget -q "https://github.com/google/benchmark/archive/refs/tags/$BENCHMARK_VERSION.tar.gz" -O /tmp/benchmark.tar.gz
+cd /tmp
+tar -xf benchmark.tar.gz
+mv "benchmark-${BENCHMARK_VERSION#v}" benchmark
+cd benchmark
+
+CMAKE_ARGS=(
+    -DCMAKE_BUILD_TYPE="$BUILD_VARIANT"
+    -DBENCHMARK_ENABLE_TESTING=OFF
+    -DBUILD_SHARED_LIBS="$SHARED"
+    -DCMAKE_INSTALL_PREFIX=/usr/local
+)
+
 if [ "$SANITIZER" != "off" ]; then
     case "$SANITIZER" in
         asan)  SANITIZER_FLAGS="-fsanitize=address -fno-omit-frame-pointer" ;;
@@ -46,31 +49,19 @@ if [ "$SANITIZER" != "off" ]; then
         msan)  SANITIZER_FLAGS="-fsanitize=memory -fsanitize-memory-track-origins" ;;
         *)     echo "Unknown sanitizer: $SANITIZER"; exit 1 ;;
     esac
-    TOOLSET=""
     if [ "$SANITIZER" = "msan" ]; then
-        TOOLSET="toolset=clang"
+        CMAKE_ARGS+=(
+            -DCMAKE_C_COMPILER=clang
+            -DCMAKE_CXX_COMPILER=clang++
+        )
     fi
-    # shellcheck disable=SC2086
-    ./b2 install \
-        $BOOST_LIBS \
-        variant=release \
-        debug-symbols=on \
-        link=shared runtime-link=shared \
-        $TOOLSET \
-        cxxflags="$SANITIZER_FLAGS -g -O1" \
-        linkflags="$SANITIZER_FLAGS" \
-        -j2
-elif [ "$BUILD_VARIANT" = "Debug" ]; then
-    ./b2 install \
-        $BOOST_LIBS \
-        variant=debug debug-symbols=on link=$LINK_TYPE runtime-link=$LINK_TYPE \
-        -j2
-else
-    ./b2 install \
-        $BOOST_LIBS \
-        variant=release debug-symbols=off link=$LINK_TYPE runtime-link=$LINK_TYPE optimization=speed \
-        -j2
+    CMAKE_ARGS+=(
+        -DCMAKE_CXX_FLAGS="$SANITIZER_FLAGS -g -O1"
+        -DCMAKE_EXE_LINKER_FLAGS="$SANITIZER_FLAGS"
+        -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZER_FLAGS"
+    )
 fi
 
-cd ..
-rm -rf "$BOOST_DIR" "boost_$BOOST_VERSION_DASH.tar.gz"
+cmake -S . -B build "${CMAKE_ARGS[@]}"
+cmake --build build --target install --parallel 2
+rm -rf /tmp/benchmark /tmp/benchmark.tar.gz
