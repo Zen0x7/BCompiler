@@ -40,7 +40,11 @@ fi
 wget -q "https://github.com/llvm/llvm-project/archive/refs/tags/$LLVM_PROJECT_TAG.tar.gz" -O /tmp/llvm-project.tar.gz
 cd /tmp
 tar -xf llvm-project.tar.gz
-mv "llvm-project-${LLVM_PROJECT_TAG#llvmorg-}" llvm-project
+if [ -d "llvm-project-${LLVM_PROJECT_TAG#llvmorg-}" ]; then
+    mv "llvm-project-${LLVM_PROJECT_TAG#llvmorg-}" llvm-project
+else
+    mv "$(ls -d llvm-project-*/)" llvm-project
+fi
 cd llvm-project
 
 SANITIZER_FLAGS="-fsanitize=memory -fsanitize-memory-track-origins"
