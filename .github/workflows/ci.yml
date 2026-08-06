@@ -77,6 +77,5 @@ jobs:
           docker buildx build \
             $BUILD_ARGS \
             $TAGS \
-            --provenance=true \
             --push \
             .
