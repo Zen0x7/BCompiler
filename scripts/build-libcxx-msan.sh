@@ -47,18 +47,16 @@ else
 fi
 cd llvm-project
 
-SANITIZER_FLAGS="-fsanitize=memory -fsanitize-memory-track-origins"
-
+# LLVM_USE_SANITIZER is the documented way to instrument libc++: it adds the
+# sanitizer flags to the runtime build AND keeps -nostdinc++ so libc++'s own
+# headers are used instead of GCC's libstdc++ ones.
 cmake -S runtimes -B build -G Ninja \
     -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
     -DCMAKE_C_COMPILER=clang \
     -DCMAKE_CXX_COMPILER=clang++ \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
-    -DCMAKE_C_FLAGS="$SANITIZER_FLAGS" \
-    -DCMAKE_CXX_FLAGS="$SANITIZER_FLAGS" \
-    -DCMAKE_EXE_LINKER_FLAGS="$SANITIZER_FLAGS" \
-    -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZER_FLAGS" \
+    -DLLVM_USE_SANITIZER=MemoryWithOrigins \
     -DLIBCXX_ENABLE_SHARED=ON \
     -DLIBCXX_ENABLE_STATIC=OFF \
     -DLIBCXXABI_ENABLE_SHARED=ON \
@@ -67,5 +65,5 @@ cmake -S runtimes -B build -G Ninja \
     -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=OFF \
     -DLIBCXXABI_ENABLE_EXCEPTIONS=ON
 
-cmake --build build --target install --parallel 2
+cmake --build build --target install-cxx install-cxxabi --parallel 2
 rm -rf /tmp/llvm-project /tmp/llvm-project.tar.gz
