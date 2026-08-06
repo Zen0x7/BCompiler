@@ -56,10 +56,17 @@ if [ "$SANITIZER" != "off" ]; then
             -DCMAKE_CXX_COMPILER=clang++
         )
     fi
+    # MSAN needs the instrumented libc++ (built by build-libcxx-msan.sh).
+    STDLIB_FLAGS=""
+    STDLIB_LINK=""
+    if [ "$SANITIZER" = "msan" ]; then
+        STDLIB_FLAGS="-stdlib=libc++ -nostdinc++ -isystem /usr/local/include/c++/v1 -fPIC"
+        STDLIB_LINK="-stdlib=libc++ -L/usr/local/lib -Wl,-rpath,/usr/local/lib"
+    fi
     CMAKE_ARGS+=(
-        -DCMAKE_CXX_FLAGS="$SANITIZER_FLAGS -g -O1"
-        -DCMAKE_EXE_LINKER_FLAGS="$SANITIZER_FLAGS"
-        -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZER_FLAGS"
+        -DCMAKE_CXX_FLAGS="$SANITIZER_FLAGS $STDLIB_FLAGS -g -O1"
+        -DCMAKE_EXE_LINKER_FLAGS="$SANITIZER_FLAGS $STDLIB_LINK"
+        -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZER_FLAGS $STDLIB_LINK"
     )
 fi
 

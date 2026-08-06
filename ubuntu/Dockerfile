@@ -30,12 +30,18 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     clang \
     libclang-rt-18-dev \
     cmake \
+    ninja-build \
+    python3 \
     git \
     wget \
     curl \
     bash \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+COPY scripts/build-libcxx-msan.sh /tmp/build-libcxx-msan.sh
+RUN SANITIZER=$SANITIZER \
+    bash /tmp/build-libcxx-msan.sh
 
 COPY scripts/build-boost.sh /tmp/build-boost.sh
 RUN if [ "$SANITIZER" != "off" ]; then C=clang; else C=gcc; fi; \

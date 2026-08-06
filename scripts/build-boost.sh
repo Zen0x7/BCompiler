@@ -56,6 +56,13 @@ if [ "$SANITIZER" != "off" ]; then
         TOOLSET=""
         CLANG_TARGET=""
     fi
+    # MSAN needs the instrumented libc++ (built by build-libcxx-msan.sh).
+    STDLIB_FLAGS=""
+    STDLIB_LINK=""
+    if [ "$SANITIZER" = "msan" ]; then
+        STDLIB_FLAGS="-stdlib=libc++ -nostdinc++ -isystem /usr/local/include/c++/v1 -fPIC"
+        STDLIB_LINK="-stdlib=libc++ -L/usr/local/lib -Wl,-rpath,/usr/local/lib"
+    fi
     # shellcheck disable=SC2086
     ./b2 install \
         $BOOST_LIBS \
@@ -63,8 +70,8 @@ if [ "$SANITIZER" != "off" ]; then
         debug-symbols=on \
         link=shared runtime-link=shared \
         $TOOLSET \
-        cxxflags="$CLANG_TARGET $SANITIZER_FLAGS -g -O1" \
-        linkflags="$CLANG_TARGET $SANITIZER_FLAGS" \
+        cxxflags="$CLANG_TARGET $SANITIZER_FLAGS $STDLIB_FLAGS -g -O1" \
+        linkflags="$CLANG_TARGET $SANITIZER_FLAGS $STDLIB_LINK" \
         -j2
 elif [ "$BUILD_VARIANT" = "Debug" ]; then
     ./b2 install \

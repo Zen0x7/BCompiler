@@ -63,10 +63,17 @@ if [ "$SANITIZER" != "off" ]; then
     if [ "$COMPILER" = "clang" ] || [ "$SANITIZER" = "msan" ]; then
         EXTRA_CXX_FLAGS="-Wno-c2y-extensions"
     fi
+    # MSAN needs the instrumented libc++ (built by build-libcxx-msan.sh).
+    STDLIB_FLAGS=""
+    STDLIB_LINK=""
+    if [ "$SANITIZER" = "msan" ]; then
+        STDLIB_FLAGS="-stdlib=libc++ -nostdinc++ -isystem /usr/local/include/c++/v1 -fPIC"
+        STDLIB_LINK="-stdlib=libc++ -L/usr/local/lib -Wl,-rpath,/usr/local/lib"
+    fi
     CMAKE_ARGS+=(
-        -DCMAKE_CXX_FLAGS="$SANITIZER_FLAGS -g -O1 $EXTRA_CXX_FLAGS"
-        -DCMAKE_EXE_LINKER_FLAGS="$SANITIZER_FLAGS"
-        -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZER_FLAGS"
+        -DCMAKE_CXX_FLAGS="$SANITIZER_FLAGS $STDLIB_FLAGS -g -O1 $EXTRA_CXX_FLAGS"
+        -DCMAKE_EXE_LINKER_FLAGS="$SANITIZER_FLAGS $STDLIB_LINK"
+        -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZER_FLAGS $STDLIB_LINK"
     )
     # TSAN/MSAN binaries cannot run during configure (regex backend probe),
     # so pin the backend to std::regex to avoid the "failed to run" fatal.
