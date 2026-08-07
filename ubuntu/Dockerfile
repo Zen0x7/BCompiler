@@ -37,6 +37,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     curl \
     bash \
     ca-certificates \
+    wrk \
     && rm -rf /var/lib/apt/lists/*
 
 COPY scripts/build-libcxx-msan.sh /tmp/build-libcxx-msan.sh
