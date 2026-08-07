@@ -33,7 +33,8 @@ RUN apk update && apk add --no-cache \
     wget \
     curl \
     bash \
-    ca-certificates
+    ca-certificates \
+    linux-libc-dev
 
 COPY scripts/build-boost.sh /tmp/build-boost.sh
 RUN if [ "$SANITIZER" != "off" ]; then C=clang; else C=gcc; fi; \
